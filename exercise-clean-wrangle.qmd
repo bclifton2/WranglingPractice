@@ -33,7 +33,9 @@ The variable SIZE_MM uses -99999 as the code for missing values (see metadata). 
 3.  Check your output data using unique().
 
 ```{r}
+# this is changing the values in a specific data.frame without saving as another data.frame
 lobster_abundance <- lobster_abundance %>% 
+  # 'na_if()' investigates 'if' any values are NA and if any exist, changes those values (in this case in the 'SIZE_MM' col) to the specified value (-99999 here)
     mutate(SIZE_MM = na_if(SIZE_MM, -99999))
 ```
 
@@ -43,7 +45,8 @@ Create a subset with the data for the lobsters at Arroyo Quemado (AQUE) that hav
 
 ```{r}
 aque_70mm <- lobster_abundance %>% 
-    filter(SITE == "AQUE" & SIZE_MM >= 70)
+  # 'filter()' reduces the data frame to only the specified rows and cols. here, it's to only sites that are 'AQUE' and SIZE_MM that are greater than '70'
+    filter(SITE == "AQUE" & SIZE_MM > 70)
 ```
 
 # Exercise 3
