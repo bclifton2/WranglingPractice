@@ -7,24 +7,125 @@ editor: visual
 
 # About the data
 
+link to data: https://portal.edirepository.org/nis/mapbrowse?packageid=knb-lter-sbc.77.8
+
 # Setup
+
+```{r}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(tidyr)
+```
 
 # Read and explore data
 
+```{r}
+# Read in data
+lobster_abundance <- read_csv("https://portal.edirepository.org/nis/dataviewer?packageid=knb-lter-sbc.77.8&entityid=f32823fba432f58f66c06b589b7efac6")
+
+lobster_traps <- read_csv("https://portal.edirepository.org/nis/dataviewer?packageid=knb-lter-sbc.77.8&entityid=66dd61c75bda17c23a3bce458c56ed84")
+```
+
 # Exercise 1
+
+The variable SIZE_MM uses -99999 as the code for missing values (see metadata). This has the potential to cause conflicts with our analyses. Modify the data following these steps:
+
+1.  Verify the SIZE_MM variable contains -99999 values using unique().
+2.  Convert every -99999 value to an NA value using mutate() and na_if(). Look up the help page to see how to use na_if().
+3.  Check your output data using unique().
+
+```{r}
+lobster_abundance <- lobster_abundance %>% 
+    mutate(SIZE_MM = na_if(SIZE_MM, -99999))
+```
 
 # Exercise 2
 
+Create a subset with the data for the lobsters at Arroyo Quemado (AQUE) that have a carapace length greater than 70 mm.
+
+```{r}
+aque_70mm <- lobster_abundance %>% 
+    filter(SITE == "AQUE" & SIZE_MM >= 70)
+```
+
 # Exercise 3
+
+Create a subset with the traps' information at all sites where abundance data is not NA. Note that you first have to identify which are these sites.
+
+HINT: use %in%.
+
+```{r}
+## Create a vector with unique sites in lobster_abundance
+abundance_sites <- unique(lobster_abundance$SITE)
+
+## Filter sites in vector above
+traps_subset <- lobster_traps %>% 
+    filter(SITE %in% abundance_sites)
+```
 
 # Exercise 4
 
+For each data frame, calculate the total count and total traps by site and year (i.e. total traps for every combination of site and year). Store these summary statistics in separate data frames.
+
+HINT: use group_by() and summarize().
+
+Do you notice anything not right in the outcome data frame? We'll get to it in exercise 7.
+
+```{r}
+total_abundance <- lobster_abundance %>% 
+    group_by(SITE, YEAR) %>% 
+    summarize(total_lobsters = sum(COUNT, na.rm = TRUE))
+
+
+total_traps <- traps_subset %>% 
+    group_by(SITE, YEAR) %>% 
+    summarize(total_traps = sum(TRAPS, na.rm = TRUE))
+```
+
 # Exercise 5
+
+Use one of the join_ functions to get an output data frame with the following columns: SITE, YEAR, total_lobsters, total_traps.
+
+Discuss with your neighbor how the output data frame varies when you do a left_join() or a full_join(). What happens when you do an inner_join()?
+
+```{r}
+abundance_trapsL <- total_abundance %>% 
+  left_join(total_traps, by = c("SITE", "YEAR"))
+
+##  Or
+
+abundance_trapsF <- total_abundance %>% 
+  full_join(total_traps, by = c("SITE", "YEAR"))
+
+## Or
+
+abundance_trapsI <- total_abundance %>% 
+  inner_join(total_traps, by = c("SITE", "YEAR"))
+```
 
 # Exercise 6
 
+The sites IVEE and NAPL are marine protected areas (MPAs). Read the documentation about the case_when() function and use it to add this designation to your data set.
 
+HINT: Notice you will have to create a new column with the MPA designation. What function have you previously used to create new columns?
 
+```{r}
+lobster_mpa <- abundance_traps %>% 
+    mutate(DESIGNATION = case_when(
+    SITE %in% c("IVEE", "NAPL") ~ "MPA",
+    SITE %in% c("AQUE", "CARP", "MOHK") ~ "not MPA"))
+```
 
+# Exercise 7
 
+What would you do to fix the issues with the values in the total_traps column? Find the root of the issue, modify the dataset to solve it, and discuss with your neighbor where in your script you would include this step.
 
+```{r}
+# Replace -99999 values for NAs at the beginning of the script, 
+# similar to what we did in question 1 but for lobster_traps data frame. 
+# Then re run all the other steps.
+
+lobster_traps <- lobster_traps %>% 
+    mutate(TRAPS = na_if(TRAPS, -99999))
+```
